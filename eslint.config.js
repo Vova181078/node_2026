@@ -46,7 +46,7 @@ export default [
             "import/newline-after-import": ["error", { count: 1 }],
             "import/no-duplicates": "error",
             "prettier/prettier": ["error"],
-            "no-console": "no",
+            "no-console": "off",
         },
     },
 ];

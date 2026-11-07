@@ -1,28 +1,44 @@
-import express (req: Request, resp: Response, next: NextFunction) from "express";
 
-import { ApiError } from "../../errors/api.errors.js";
-import { apiRouter } from "../../routers/api.router.js";
-import { NextFunction } from "express"; // Імпортуємо ваш готовий роутер
+    import express, { Request, Response, NextFunction } from "express";
 
-const app = express();
+    import { config } from "../../configs/config.js";
+    import { ApiError } from "../../errors/api.errors.js";
+    import { apiRouter } from "../../routers/api.router.js";
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+    const app = express();
 
-app.use(apiRouter);
+// Middleware для обробки даних із запитів
+    app.use(express.json());
+    app.use(express.urlencoded({ extended: true }));
 
-process.on("uncaughtException", (err) => {
-    console.error("uncaughtException", err);
-    process.exit(1);
-});
+// Підключення роутера
+    app.use(apiRouter);
 
-app.use((err: ApiError, req: Request, res: Response, next: NextFunction) => {
-    const status = err.status || 500;
-    const message = err.message ?? "Something went wrong";
-    res.status(status).json({ status, message });
-});
+// Глобальний обробник помилок
+    app.use(
+        (err: ApiError, req: Request, res: Response, next: NextFunction) => {
+            const status = err.status || 500;
+            const message = err.message ?? "Something went wrong";
 
-const PORT = 3000;
-app.listen(PORT, () => {
+            res.status(status).json({
+                status,
+                message,
+            });
+        },
+    );
+
+// Обробка непередбачених помилок Node.js
+    process.on("uncaughtException", (err) => {
+        console.error("uncaughtException:", err);
+        process.exit(1);
+    });
+
+// Запуск сервера
+    const PORT = config.PORT || 3000;
+
+    app.listen(PORT, () => {
+        console.log(`Server is running at http://localhost:${PORT}`);
+    });
+
     console.log(`Server is running at http://localhost:${PORT}`);
-});
+

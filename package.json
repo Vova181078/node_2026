@@ -6,14 +6,15 @@
   "type": "module",
   "scripts": {
     "start": "rimraf dist && tsc-watch --onSuccess \"npm run watch:server\"",
-    "watch:server": "tsx watch src/home-works/hw-4/index.ts"
+    "watch:server": "tsx watch src/home-works/hw-5/index.ts",
+    "lint:fix": "eslint --fix ."
   },
   "private": true,
   "dependencies": {
     "dotenv": "^16.6.1",
     "express": "^4.21.2",
     "joi": "^17.13.9",
-    "mongoose": "^8.12.1"
+    "mongoose": "^8.24.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",

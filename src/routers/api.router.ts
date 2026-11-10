@@ -15,8 +15,8 @@ router.get("/users", async (req: Request, res: Response) => {
 
 router.get("/users/:userId", async (req: Request, res: Response) => {
     try {
-        const userId = Number(req.params.userId);
-        const user = await userRouter.getById(userId);
+        const userId = req.params.userId;
+        const user = await userRouter.getById(+userId);
 
         res.status(200).json(user);
     } catch (err) {
@@ -38,8 +38,8 @@ router.post("/users", async (req: Request, res: Response) => {
 
 router.put("/users/:userId", async (req: Request, res: Response) => {
     try {
-        const userId = Number(req.params.userId);
-        const updatedUser = await userRouter.update(userId, req.body);
+        const userId = req.params.userId;
+        const updatedUser = await userRouter.update(+userId, req.body);
 
         res.status(200).json(updatedUser);
     } catch (err) {
@@ -52,8 +52,8 @@ router.put("/users/:userId", async (req: Request, res: Response) => {
 
 router.delete("/users/:userId", async (req: Request, res: Response) => {
     try {
-        const userId = Number(req.params.userId);
-        await userRouter.delete(userId);
+        const userId = req.params.userId;
+        await userRouter.delete(+userId);
 
         res.status(204).send();
     } catch (err) {

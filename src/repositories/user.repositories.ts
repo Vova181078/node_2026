@@ -1,80 +1,81 @@
-import { IUser } from "../interfaces/user.interface.js";
+import { FilterQuery, SortOrder } from "mongoose";
+import { IUser, IUserListQuery } from "../interfaces/user.interface.js";
+import { ApiError } from "../errors/api.errors.js";
+import { User } from "../models/user_model_schema.js";
 
-export const users: IUser[] = [
-    { id: 1, name: "vasya", age: 31, status: false },
-    { id: 2, name: "petya", age: 30, status: true },
-    { id: 3, name: "kolya", age: 29, status: true },
-    { id: 4, name: "olya", age: 28, status: false },
-    { id: 5, name: "max", age: 30, status: true },
-    { id: 6, name: "anya", age: 31, status: false },
-    { id: 7, name: "oleg", age: 28, status: false },
-    { id: 8, name: "andrey", age: 29, status: true },
-    { id: 9, name: "masha", age: 30, status: true },
-    { id: 10, name: "olya", age: 31, status: false },
-    { id: 11, name: "max", age: 31, status: true },
-];
-
-export const userRouter = {
-    async getAll() {
-        return users;
-    },
-
-    async getById(id: number) {
-        const user = users.find((user) => user.id === id);
-        if (!user) {
-            throw new Error("User Not Found"); // Викидаємо помилку, яку Express зловить у catch
-        }
-        return user;
-    },
-
-    async create(data: IUser) {
-        // Валідація імені та віку
-        if (!data.name || data.name.length < 3) {
-            throw new Error("Name must be at least 3 symbols long");
-        }
-        if (data.age === undefined || data.age < 0) {
-            throw new Error("Age must be a positive number");
-        }
-
-        const id = users.length > 0 ? users[users.length - 1].id + 1 : 1;
-
-        const newUser: IUser = {
-            id,
-            name: data.name,
-            age: data.age,
-            status: data.status ?? false,
+class UserRepository {
+    public async getAll(query: IUserListQuery): Promise<[IUser[], number]> {
+        const filterObj: FilterQuery<IUser> = {
+            // isVerified: true
         };
-
-        users.push(newUser);
-        return newUser;
-    },
-
-    async update(id: number, data: Partial<IUser>) {
-        const userIndex = users.findIndex((user) => user.id === id);
-
-        if (userIndex === -1) {
-            throw new Error("User Not Found");
+        if (query.search) {
+            filterObj.name = { $regex: query.search, $options: "i" };
+            // filterObj.$or = [
+            //   { name: { $regex: query.search, $options: "i" } },
+            //   { email: { $regex: query.search, $options: "i" } },
+            // ];
         }
 
-        if (data.name !== undefined && data.name.length < 3) {
-            throw new Error("Name must be at least 3 symbols long");
-        }
-        if (data.age !== undefined && data.age < 0) {
-            throw new Error("Age must be a positive number");
-        }
-
-        users[userIndex] = { ...users[userIndex], ...data };
-        return users[userIndex];
-    },
-
-    async delete(id: number) {
-        const userIndex = users.findIndex((user) => user.id === id);
-
-        if (userIndex === -1) {
-            throw new Error("User Not Found");
+        const sortObj: { [key: string]: SortOrder } = {};
+        switch (query.orderBy) {
+            case UserListOrderByEnum.NAME:
+                sortObj.name = query.order;
+                break;
+            case UserListOrderByEnum.AGE:
+                sortObj.age = query.order;
+                break;
+            case UserListOrderByEnum.CREATED:
+                sortObj.createdAt = query.order;
+                break;
+            default:
+                throw new ApiError("Invalid orderBy", 500);
         }
 
-        users.splice(userIndex, 1);
-        return true;
-    },
-};
+        const skip = query.limit * (query.page - 1);
+        return await Promise.all([
+            User.find(filterObj).sort(sortObj).limit(query.limit).skip(skip),
+            User.countDocuments(filterObj),
+        ]);
+    }
+
+    public async create(dto: Partial<IUser>): Promise<IUser> {
+        return await User.create(dto);
+    }
+
+    public async getById(userId: string): Promise<IUser | null> {
+        return await User.findById(userId).select("+password");
+    }
+
+    public async getByEmail(email: string): Promise<IUser | null> {
+        return await User.findOne({ email }).select("+password");
+    }
+
+    public async updateById(
+        userId: string,
+        dto: Partial<IUser>,
+    ): Promise<IUser | null> {
+        return await User.findByIdAndUpdate(userId, dto, { new: true });
+    }
+
+    public async deleteById(userId: string): Promise<void> {
+        await User.deleteOne({ _id: userId });
+    }
+
+    // public async findWithOutActivity(date: Date): Promise<IUser[]> {
+    //     return await User.aggregate([
+    //         {
+    //             $lookup: {
+    //                 from: Token.collection.name,
+    //                 let: { userId: "$_id" },
+    //                 pipeline: [
+    //                     { $match: { $expr: { $eq: ["$_userId", "$$userId"] } } },
+    //                     { $match: { createdAt: { $gt: date } } },
+    //                 ],
+    //                 as: "tokens",
+    //             },
+    //         },
+    //         { $match: { tokens: { $size: 0 } } },
+    //     ]);
+    // }
+}
+export const userRepository = new UserRepository();

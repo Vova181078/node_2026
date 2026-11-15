@@ -1,7 +1,7 @@
 import express, { NextFunction, Request, Response } from "express";
 
 import { ApiError } from "../../errors/api.errors.js";
-import { apiRouter } from "../../routers/api.router.js"; // Імпортуємо ваш готовий роутер
+import { apiRouter } from "../../routers/api.router.js";
 
 const app = express();
 

@@ -13,25 +13,25 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(apiRouter);
 
-app.use((err: ApiError, req: Request, res: Response, next: NextFunction) => {
-    const status = err.status || 500;
-    const message = err.message ?? "Something went wrong";
+app.use(
+    "*",
+    (err: ApiError, req: Request, res: Response, next: NextFunction) => {
+        const status = err.status || 500;
+        const message = err.message ?? "Something went wrong";
 
-    res.status(status).json({
-        status,
-        message,
-    });
-});
+        res.status(status).json({
+            status,
+            message,
+        });
+    },
+);
 
 process.on("uncaughtException", (err) => {
     console.error("uncaughtException:", err);
     process.exit(1);
 });
 
-const PORT = config.PORT || 3000;
-const HOST = config.HOST;
-
-app.listen(PORT, () => {
-    mongoose.connect(config.MONGO_URL);
-    console.log(`Server is running at http://${HOST}:${PORT}`);
+app.listen(config.PORT, async () => {
+    await mongoose.connect(config.MONGO_URL);
+    console.log(`Server is running at http://${config.HOST}:${config.PORT}`);
 });
